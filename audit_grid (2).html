@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auditorías PI OUT — ARBA01</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #f9f9f8; color: #111; font-family: 'Inter', sans-serif; font-size: 13px; }
+
+  .header {
+    background: #fff; border-bottom: 1px solid #e8e8e8;
+    padding: 0 28px; height: 50px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .title { font-size: 13px; font-weight: 600; }
+  .tag { font-size: 11px; color: #aaa; background: #f3f3f2; padding: 2px 9px; border-radius: 20px; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .last-update { font-size: 11px; color: #aaa; }
+
+  .btn {
+    display: flex; align-items: center; gap: 6px;
+    background: #111; color: #fff; border: none; border-radius: 5px;
+    padding: 7px 14px; font-size: 12px; font-weight: 500;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+    transition: background 0.1s;
+  }
+  .btn:hover { background: #333; }
+  .btn:disabled { background: #ccc; cursor: default; }
+  .btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .spin { animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .main { padding: 20px 28px; }
+
+  .summary {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 0; border: 1px solid #e8e8e8; border-radius: 7px;
+    overflow: hidden; background: #e8e8e8; margin-bottom: 20px;
+    max-width: 560px;
+  }
+  .scard { background: #fff; padding: 14px 18px; }
+  .scard-label { font-size: 10px; color: #aaa; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+  .scard-value { font-size: 22px; font-weight: 600; color: #111; line-height: 1; }
+  .scard-sub { font-size: 10px; color: #bbb; margin-top: 3px; }
+
+  .controls {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 10px; margin-bottom: 16px;
+  }
+  .legend { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .legend-label { font-size: 11px; color: #aaa; }
+  .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #777; }
+  .ldot { width: 11px; height: 11px; border-radius: 2px; }
+  .filters { display: flex; gap: 8px; align-items: center; }
+  .fsel, .finput {
+    border: 1px solid #e8e8e8; border-radius: 5px;
+    background: #fff; color: #111; font-size: 12px;
+    padding: 5px 9px; font-family: 'Inter', sans-serif; outline: none;
+  }
+  .fsel:focus, .finput:focus { border-color: #bbb; }
+  .finput { width: 160px; }
+
+  .section { margin-bottom: 24px; }
+  .sec-hdr { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+  .sec-title { font-size: 13px; font-weight: 600; }
+  .sec-sub { font-size: 11px; color: #aaa; }
+
+  .tbl-wrap { overflow-x: auto; border: 1px solid #e8e8e8; border-radius: 7px; background: #fff; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 400px; }
+
+  thead tr:first-child th {
+    background: #fafafa; font-size: 11px; font-weight: 500; color: #777;
+    text-align: center; padding: 6px 4px; border-bottom: 1px solid #f0f0f0;
+  }
+  thead tr:last-child th {
+    background: #fafafa; font-size: 10px; font-weight: 500; color: #bbb;
+    text-align: center; padding: 5px 4px; border-bottom: 1px solid #e8e8e8;
+  }
+  th.lbl { text-align: left !important; padding-left: 14px !important; min-width: 140px; }
+  tbody tr { border-bottom: 1px solid #f3f3f2; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr.tot-row { background: #fafafa; }
+  tbody td { text-align: center; padding: 6px 4px; }
+  tbody td.lbl { text-align: left; padding-left: 14px; font-weight: 500; white-space: nowrap; color: #111; }
+  tbody td.tot { font-weight: 600; color: #111; }
+  .cv { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 20px; border-radius: 3px; font-size: 11px; font-weight: 600; padding: 0 4px; }
+  .dash { color: #ddd; }
+  .h1 { background: #dcfce7; color: #166534; }
+  .h2 { background: #86efac; color: #14532d; }
+  .h3 { background: #22c55e; color: #fff; }
+  .h4 { background: #15803d; color: #fff; }
+
+  .empty { padding: 48px; text-align: center; color: #aaa; font-size: 13px; line-height: 2; }
+  .err { color: #dc2626; }
+
+  .info-box {
+    background: #fff; border: 1px solid #e8e8e8; border-radius: 7px;
+    padding: 24px 28px; max-width: 520px; margin: 32px auto;
+  }
+  .info-box h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+  .info-box p { color: #777; line-height: 1.7; font-size: 12px; margin-bottom: 8px; }
+  .info-box code { background: #f3f3f2; padding: 2px 6px; border-radius: 3px; font-size: 11px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <span class="title">Auditorías PI OUT</span>
+    <span class="tag">ARBA01 · 2026</span>
+  </div>
+  <div class="header-right">
+    <span class="last-update" id="lastUpdate"></span>
+    <button class="btn" id="btnRef" onclick="loadData()">
+      <svg id="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+      </svg>
+      Actualizar
+    </button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="summary">
+    <div class="scard"><div class="scard-label">Auditorías</div><div class="scard-value" id="s1">—</div><div class="scard-sub">únicas</div></div>
+    <div class="scard"><div class="scard-label">Procesos</div><div class="scard-value" id="s2">—</div><div class="scard-sub">activos</div></div>
+    <div class="scard"><div class="scard-label">Auditores</div><div class="scard-value" id="s3">—</div><div class="scard-sub">activos</div></div>
+    <div class="scard"><div class="scard-label">Semanas</div><div class="scard-value" id="s4">—</div><div class="scard-sub">con actividad</div></div>
+  </div>
+
+  <div class="controls">
+    <div class="legend">
+      <span class="legend-label">Cantidad:</span>
+      <div class="legend-item"><div class="ldot" style="background:#dcfce7;border:1px solid #bbf7d0"></div>1–30</div>
+      <div class="legend-item"><div class="ldot" style="background:#86efac"></div>31–80</div>
+      <div class="legend-item"><div class="ldot" style="background:#22c55e"></div>81–150</div>
+      <div class="legend-item"><div class="ldot" style="background:#15803d"></div>150+</div>
+      <div class="legend-item"><div class="ldot" style="background:#f3f3f2;border:1px solid #e8e8e8"></div>Sin actividad</div>
+    </div>
+    <div class="filters">
+      <input class="finput" id="srch" placeholder="Buscar..." oninput="render()">
+      <select class="fsel" id="mesSel" onchange="render()">
+        <option value="">Todos los meses</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="grids">
+    <div class="empty">Presioná <strong>Actualizar</strong> para cargar los datos.<br><small>Requiere estar logueado con tu cuenta Meli en el browser.</small></div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────────
+const SHEET_ID   = '13_Lw4qDe13RS8lr3jM8bfHD_15Xfs96xdb6caH7LIfw';
+const SHEET_NAME = 'Extracto 1';
+// URL que funciona mientras estés logueado con la cuenta que tiene acceso
+const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
+// ────────────────────────────────────────────────────────────────────────
+
+const MESES = {
+  '2026-01':'Enero','2026-02':'Febrero','2026-03':'Marzo','2026-04':'Abril',
+  '2026-05':'Mayo','2026-06':'Junio','2026-07':'Julio','2026-08':'Agosto',
+  '2026-09':'Septiembre','2026-10':'Octubre','2026-11':'Noviembre','2026-12':'Diciembre'
+};
+
+let PROC={}, AUD={}, WEEKS=[], WMES={};
+
+function hc(v){ if(!v) return ''; if(v<=30) return 'h1'; if(v<=80) return 'h2'; if(v<=150) return 'h3'; return 'h4'; }
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  // Handle quoted fields
+  return lines.map(line => {
+    const fields = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { fields.push(cur.trim()); cur = ''; }
+      else { cur += c; }
+    }
+    fields.push(cur.trim());
+    return fields;
+  });
+}
+
+async function loadData() {
+  const btn = document.getElementById('btnRef');
+  const ico = document.getElementById('ico');
+  btn.disabled = true; ico.classList.add('spin');
+  document.getElementById('grids').innerHTML = '<div class="empty">Cargando datos...</div>';
+
+  try {
+    const res = await fetch(CSV_URL, { credentials: 'include' });
+    if (!res.ok) throw new Error(`HTTP ${res.status} — ¿Estás logueado con tu cuenta Meli?`);
+    const text = await res.text();
+    if (text.includes('<html') || text.includes('signin')) throw new Error('Sesión no válida — abrí la sheet primero en otra pestaña.');
+    processCSV(text);
+    document.getElementById('lastUpdate').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  } catch(e) {
+    document.getElementById('grids').innerHTML = `
+      <div class="info-box">
+        <h3>No se pudo cargar</h3>
+        <p class="err">${e.message}</p>
+        <p>Para que funcione:</p>
+        <p>1. Abrí la sheet en otra pestaña del mismo browser:<br>
+           <code>docs.google.com/spreadsheets/d/${SHEET_ID}/edit</code></p>
+        <p>2. Volvé acá y presioná <strong>Actualizar</strong> de nuevo.</p>
+      </div>`;
+  } finally {
+    btn.disabled = false; ico.classList.remove('spin');
+  }
+}
+
+function processCSV(text) {
+  const rows = parseCSV(text);
+  if (rows.length < 2) { document.getElementById('grids').innerHTML = '<div class="empty">Sin datos.</div>'; return; }
+
+  const headers = rows[0];
+  const idx = {}; headers.forEach((h,i) => idx[h.replace(/^"|"$/g,'').trim()] = i);
+
+  const pW={}, aW={}, wm={};
+  const allIds = new Set();
+
+  rows.slice(1).forEach(row => {
+    const proc = (row[idx['PROCESO']]||'').replace(/"/g,'').trim();
+    const id   = (row[idx['ID']]||'').replace(/"/g,'').trim();
+    const aud  = (row[idx['AUDITOR']]||'').replace(/"/g,'').trim().replace('@mercadolibre.com','');
+    const mes  = (row[idx['MES']]||'').replace(/"/g,'').trim();
+    const sem  = parseInt((row[idx['SEMANA_DEL_ANIO']]||'0').replace(/"/g,''));
+    if (!proc || !id || !sem) return;
+    allIds.add(id); wm[sem] = mes;
+    if (!pW[proc]) pW[proc]={}; if (!pW[proc][sem]) pW[proc][sem]=new Set(); pW[proc][sem].add(id);
+    if (!aud) return;
+    if (!aW[aud]) aW[aud]={};  if (!aW[aud][sem]) aW[aud][sem]=new Set();   aW[aud][sem].add(id);
+  });
+
+  PROC={}; AUD={}; WMES=wm;
+  for (const [p,ws] of Object.entries(pW)) { PROC[p]={}; for (const [w,ids] of Object.entries(ws)) PROC[p][w]=ids.size; }
+  for (const [a,ws] of Object.entries(aW)) { AUD[a]={};  for (const [w,ids] of Object.entries(ws)) AUD[a][w]=ids.size; }
+  WEEKS = Object.keys(wm).map(Number).sort((a,b)=>a-b);
+
+  document.getElementById('s1').textContent = allIds.size;
+  document.getElementById('s2').textContent = Object.keys(PROC).length;
+  document.getElementById('s3').textContent = Object.keys(AUD).length;
+  document.getElementById('s4').textContent = WEEKS.length;
+
+  const meses = [...new Set(Object.values(wm))].sort();
+  const sel = document.getElementById('mesSel');
+  sel.innerHTML = '<option value="">Todos los meses</option>';
+  meses.forEach(m => sel.innerHTML += `<option value="${m}">${MESES[m]||m}</option>`);
+
+  render();
+}
+
+function render() {
+  const mes  = document.getElementById('mesSel').value;
+  const srch = document.getElementById('srch').value.toLowerCase();
+  const weeks = mes ? WEEKS.filter(w=>WMES[w]===mes) : WEEKS;
+  if (!weeks.length || !Object.keys(PROC).length) return;
+  document.getElementById('grids').innerHTML =
+    buildGrid('Por proceso', PROC, weeks, 'Proceso', srch) +
+    buildGrid('Por auditor', AUD,  weeks, 'Auditor', srch);
+}
+
+function buildGrid(title, map, weeks, lbl, srch) {
+  const entries = Object.entries(map)
+    .filter(([k])=>!srch||k.toLowerCase().includes(srch))
+    .sort(([a],[b])=>a.localeCompare(b));
+
+  const groups={};
+  weeks.forEach(w => {
+    const m = MESES[WMES[w]]||WMES[w]||'';
+    if (!groups[m]) groups[m]=[];
+    groups[m].push(w);
+  });
+
+  let r1=`<tr><th class="lbl" rowspan="2">${lbl}</th>`, r2='<tr>';
+  for (const [m,ws] of Object.entries(groups)) {
+    r1+=`<th colspan="${ws.length}">${m}</th>`;
+    ws.forEach(w=>r2+=`<th>W${w}</th>`);
+  }
+  r1+='<th>Total</th></tr>'; r2+='</tr>';
+
+  const wt={}; weeks.forEach(w=>wt[w]=0);
+  let tbody='';
+  entries.forEach(([label,wdata])=>{
+    let tot=0, cells='';
+    weeks.forEach(w=>{
+      const v=wdata[w]||0; tot+=v; wt[w]+=v;
+      cells+=v?`<td><span class="cv ${hc(v)}">${v}</span></td>`:`<td><span class="dash">—</span></td>`;
+    });
+    tbody+=`<tr><td class="lbl">${label}</td>${cells}<td class="tot">${tot}</td></tr>`;
+  });
+
+  let tr='<tr class="tot-row"><td class="lbl">Total semana</td>'; let g=0;
+  weeks.forEach(w=>{ g+=wt[w]; tr+=`<td><strong>${wt[w]||'—'}</strong></td>`; });
+  tr+=`<td class="tot">${g}</td></tr>`;
+
+  return `<div class="section">
+    <div class="sec-hdr"><span class="sec-title">${title}</span><span class="sec-sub">auditorías únicas por semana</span></div>
+    <div class="tbl-wrap"><table><thead>${r1+r2}</thead><tbody>${tbody+tr}</tbody></table></div>
+  </div>`;
+}
+</script>
+</body>
+</html>
